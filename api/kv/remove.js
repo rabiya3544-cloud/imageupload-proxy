@@ -1,6 +1,6 @@
 import { applyCors }    from '../_cors.js';
 import { isAuthorized } from '../_kv-auth.js';
-import { kv }           from '@vercel/kv';
+import { redis }        from '../_redis.js';
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   if (!id) return res.status(400).json({ ok: false, error: 'id required' });
 
   try {
-    await kv.hdel('gallery:items', id);
+    await redis.hdel('gallery:items', id);
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error('kv remove error:', err);
