@@ -1,6 +1,6 @@
 import { applyCors }    from '../_cors.js';
 import { isAuthorized } from '../_kv-auth.js';
-import { kv }           from '@vercel/kv';
+import { redis }        from '../_redis.js';
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
@@ -9,9 +9,12 @@ export default async function handler(req, res) {
   if (!isAuthorized(req)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
 
   try {
-    const hash = (await kv.hgetall('gallery:items')) || {};
+    const hash = (await redis.hgetall('gallery:items')) || {};
     const items = Object.values(hash)
-      .map(v => { try { return JSON.parse(v); } catch { return null; } })
+      .map(v => {
+        try { return typeof v === 'string' ? JSON.parse(v) : v; }
+        catch { return null; }
+      })
       .filter(Boolean)
       .sort((a, b) => (b.time || 0) - (a.time || 0));
 
