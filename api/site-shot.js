@@ -2,6 +2,18 @@
 
 const SITESHOT_URL = 'https://www.site-shot.com/screenshot/';
 
+/* Every Site-Shot documented parameter is passed through if the caller sends it. */
+const PASSTHROUGH_KEYS = [
+  'width', 'height', 'zoom', 'full_size', 'max_height',
+  'user_agent', 'scaled_width', 'format',
+  'delay_time', 'timeout',
+  'no_cookie_popup', 'no_ads', 'no_ads_no_cookie',
+  'geolocation', 'time_zone', 'language', 'http_referer',
+  'fresh_session', 'resolve_captcha', 'ready_variable',
+  'source_code', 'webgl', 'country', 'javascript_code',
+  'request_headers', 'proxy_rotation'
+];
+
 function applyCors(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -17,28 +29,26 @@ function randId() {
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
-
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
   const input = req.method === 'POST' ? (req.body || {}) : (req.query || {});
-  const url   = input.url;
-  if (!url) return res.status(400).json({ ok: false, error: 'url is required' });
+  if (!input.url) return res.status(400).json({ ok: false, error: 'url is required' });
 
   const qs = new URLSearchParams();
-  qs.set('url',                 url);
-  qs.set('width',               input.width        || '1080');
-  qs.set('height',              input.height       || '2340');
-  qs.set('zoom',                input.zoom         || '300');
-  qs.set('scaled_width',        input.scaled_width || '1080');
-  qs.set('full_size',           input.full_size   !== undefined ? String(input.full_size) : '');
-  qs.set('format',              String(input.format || 'PNG').toUpperCase());
-  qs.set('user_agent',          input.user_agent   || 'galaxy_a56');
-  qs.set('no_ads_no_cookie',    input.no_ads_no_cookie || '1');
-  qs.set('rnd',                 input.rnd          || randId());
-  qs.set('src',                 'web');
+  qs.set('url', input.url);
+  qs.set('src', 'web');
+  qs.set('rnd', input.rnd || randId());
   qs.set('g-recaptcha-response', '');
+  qs.set('response_type', 'json');
+
+  /* Forward only what the caller actually sent */
+  for (const k of PASSTHROUGH_KEYS) {
+    const v = input[k];
+    if (v === undefined || v === null || v === '') continue;
+    qs.set(k, String(v));
+  }
 
   const upstream = SITESHOT_URL + '?' + qs.toString();
 
