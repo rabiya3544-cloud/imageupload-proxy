@@ -78,6 +78,7 @@ export default async function handler(req, res) {
     const isProvided = provided !== undefined && provided !== null && provided !== '';
     params[key] = isProvided ? provided : DEFAULTS[key];
   }
+  console.log('RESOLVED PARAMS:', JSON.stringify(params));
 
   /* scaled_width = 'mirror' means "same as width" */
   if (params.scaled_width === 'mirror' || params.scaled_width === null) {
