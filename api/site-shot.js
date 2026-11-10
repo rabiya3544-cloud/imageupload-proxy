@@ -107,6 +107,7 @@ export default async function handler(req, res) {
   }
 
   const upstream = SITESHOT_URL + '?' + qs.toString();
+  console.log('UPSTREAM URL:', upstream);
 
   try {
     const r = await fetch(upstream, {
