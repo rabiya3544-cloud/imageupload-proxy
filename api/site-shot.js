@@ -11,24 +11,13 @@ function applyCors(req, res) {
   return false;
 }
 
-function authorized(req) {
-  const expected = process.env.PROXY_ACCESS_KEY;
-  if (!expected) return true; // no gate configured
-  const auth = req.headers.authorization || '';
-  return auth === 'Bearer ' + expected;
-}
-
 function randId() {
-  // 15-digit number, similar to the "rnd" param the web frontend uses
   return String(Date.now()) + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
 }
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
 
-  if (!authorized(req)) {
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
-  }
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
@@ -38,17 +27,17 @@ export default async function handler(req, res) {
   if (!url) return res.status(400).json({ ok: false, error: 'url is required' });
 
   const qs = new URLSearchParams();
-  qs.set('url',                url);
-  qs.set('width',              input.width        || '1080');
-  qs.set('height',             input.height       || '2340');
-  qs.set('zoom',               input.zoom         || '300');
-  qs.set('scaled_width',       input.scaled_width || '1080');
-  qs.set('full_size',          input.full_size   !== undefined ? String(input.full_size) : '');
-  qs.set('format',             String(input.format || 'PNG').toUpperCase());
-  qs.set('user_agent',         input.user_agent   || 'galaxy_a56');
-  qs.set('no_ads_no_cookie',   input.no_ads_no_cookie || '1');
-  qs.set('rnd',                input.rnd          || randId());
-  qs.set('src',                'web');
+  qs.set('url',                 url);
+  qs.set('width',               input.width        || '1080');
+  qs.set('height',              input.height       || '2340');
+  qs.set('zoom',                input.zoom         || '300');
+  qs.set('scaled_width',        input.scaled_width || '1080');
+  qs.set('full_size',           input.full_size   !== undefined ? String(input.full_size) : '');
+  qs.set('format',              String(input.format || 'PNG').toUpperCase());
+  qs.set('user_agent',          input.user_agent   || 'galaxy_a56');
+  qs.set('no_ads_no_cookie',    input.no_ads_no_cookie || '1');
+  qs.set('rnd',                 input.rnd          || randId());
+  qs.set('src',                 'web');
   qs.set('g-recaptcha-response', '');
 
   const upstream = SITESHOT_URL + '?' + qs.toString();
