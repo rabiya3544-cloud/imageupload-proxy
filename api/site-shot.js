@@ -78,7 +78,6 @@ export default async function handler(req, res) {
     const isProvided = provided !== undefined && provided !== null && provided !== '';
     params[key] = isProvided ? provided : DEFAULTS[key];
   }
-  console.log('RESOLVED PARAMS:', JSON.stringify(params));
 
   /* scaled_width = 'mirror' means "same as width" */
   if (params.scaled_width === 'mirror' || params.scaled_width === null) {
@@ -107,7 +106,6 @@ export default async function handler(req, res) {
   }
 
   const upstream = SITESHOT_URL + '?' + qs.toString();
-  console.log('UPSTREAM URL:', upstream);
 
   try {
     const r = await fetch(upstream, {
@@ -120,6 +118,14 @@ export default async function handler(req, res) {
       }
     });
 
+    /* Diagnostics returned inline so the client can inspect without Vercel logs */
+    const diagnostics = {
+      upstream_built: upstream,
+      fetch_hit_url:  r.url,
+      fetch_status:   r.status,
+      params_sent:    params
+    };
+
     const text = await r.text();
     let json;
     try { json = JSON.parse(text); }
@@ -128,7 +134,8 @@ export default async function handler(req, res) {
         ok: false,
         error: 'Upstream returned non-JSON',
         upstreamStatus: r.status,
-        bodyPreview: text.slice(0, 300)
+        bodyPreview: text.slice(0, 300),
+        diagnostics: diagnostics
       });
     }
 
@@ -138,7 +145,8 @@ export default async function handler(req, res) {
         error: 'Upstream error (HTTP ' + r.status + ')',
         image: json.image,
         response: json.response,
-        screenshot_parameters: json.screenshot_parameters
+        screenshot_parameters: json.screenshot_parameters,
+        diagnostics: diagnostics
       });
     }
 
@@ -146,7 +154,8 @@ export default async function handler(req, res) {
       ok: true,
       image: json.image,
       response: json.response,
-      screenshot_parameters: json.screenshot_parameters
+      screenshot_parameters: json.screenshot_parameters,
+      diagnostics: diagnostics
     });
   } catch (e) {
     return res.status(500).json({ ok: false, error: e.message });
